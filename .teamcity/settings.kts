@@ -109,13 +109,12 @@ object Deploy : BuildType({
                 TARGET_IP="147.45.158.68"
                 CONTEXT_NAME="remote-target"
                 
-                # Опции SSH, чтобы агент не спотыкался о проверку незнакомого хоста
-                export DOCKER_SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-                
                 echo "=== СТАРТ: Настройка Docker Context ==="
-                # Удаляем контекст, если он остался от прошлых запусков, и создаем чистый
+                # Удаляем старый контекст
                 docker context rm -f ${'$'}CONTEXT_NAME || true
-                docker context create ${'$'}CONTEXT_NAME --docker "host=ssh://root@${'$'}TARGET_IP"
+                
+                # Исправление: зашиваем отключение StrictHostKeyChecking прямо в URL подключения контекста
+                docker context create ${'$'}CONTEXT_NAME --docker "host=ssh://root@${'$'}TARGET_IP?ssh-options=-o%20StrictHostKeyChecking=no%20-o%20UserKnownHostsFile=/dev/null"
                 
                 # Переключаем докер-клиент на удаленный сервер
                 docker context use ${'$'}CONTEXT_NAME
@@ -127,8 +126,6 @@ object Deploy : BuildType({
                 echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
                 
                 echo "=== Деплой: Стягиваем образы и перезапускаем проект ==="
-                # Локальный docker compose подхватит docker-compose.yml из папки билда 
-                # и развернет его на удаленном сервере в контексте
                 docker compose pull
                 docker compose up -d
                 
