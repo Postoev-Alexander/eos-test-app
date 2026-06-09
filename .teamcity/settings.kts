@@ -103,10 +103,41 @@ object Deploy : BuildType({
             id = "deploy"
             scriptContent = """
                 #!/bin/bash
-                echo "=== ПРОВЕРКА СВЯЗИ С АГЕНТА ==="
-                ping -c 3 72.56.41.35 || echo "Пинг не проходит"
-                echo "=== ПРОВЕРКА ОТКРЫТОСТИ ПОРТА 22 ==="
-                timeout 5 bash -c 'cat < /dev/tcp/72.56.41.35/22' && echo "Порт 22 ОТКРЫТ для агента" || echo "Порт 22 ЗАКРЫТ для агента"
+                set -e
+                
+                # 1. Сначала ставим sshpass, если его нет
+                echo "=== Установка sshpass ==="
+                sudo apt-get update && sudo apt-get install -y sshpass
+                
+                # 2. Переменные сервера (пароль зашиваем жестко для теста)
+                export SSHPASS="uw#-DVX7T657j-"
+                SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+                
+                echo "=== СТАРТ: Копируем docker-compose.yml на целевой сервер ==="
+                # Создаем папку на удаленном сервере
+                sudo -E sshpass -e ssh ${'$'}SSH_OPTS root@72.56.41.35 "mkdir -p ~/eos-test-app"
+                
+                # Перебрасываем файл docker-compose.yml из гита на удаленный сервер
+                sudo -E sshpass -e scp ${'$'}SSH_OPTS docker-compose.yml root@72.56.41.35:~/eos-test-app/docker-compose.yml
+                
+                echo "=== СТАРТ: Выполнение команд деплоя на сервере ==="
+                sudo -E sshpass -e ssh ${'$'}SSH_OPTS root@72.56.41.35 "
+                    cd ~/eos-test-app
+                
+                    # Логиним докер на целевом сервере в гитхаб, чтобы он мог стянуть наш образ
+                    echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
+                
+                    echo '=== Сервер: Скачиваем свежий образ ==='
+                    docker compose pull
+                
+                    echo '=== Сервер: Перезапускаем контейнер ==='
+                    docker compose up -d
+                
+                    echo '=== Сервер: Очищаем старые образы ==='
+                    docker image prune -f
+                "
+                
+                echo "=== ДЕПЛОЙ ПОЛНОСТЬЮ ЗАВЕРШЕН! ==="
             """.trimIndent()
         }
     }
