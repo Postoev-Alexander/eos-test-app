@@ -67,7 +67,7 @@ object Build : BuildType({
         script {
             name = "Build and Push Image (1)"
             id = "simpleRunner"
-            scriptContent = "sudo bash .cicd/build.sh --push"
+            scriptContent = """sudo CR_PAT="%env.GHCR_TOKEN%" bash .cicd/build.sh --push"""
         }
     }
 
