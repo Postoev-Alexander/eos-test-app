@@ -64,18 +64,6 @@ object Build : BuildType({
             """.trimIndent()
         }
         dockerCommand {
-            name = "Build Image"
-            id = "Build_Image"
-            enabled = false
-            commandType = build {
-                source = file {
-                    path = "Dockerfile"
-                }
-                namesAndTags = "ghcr.io/postoev-alexander/eos-test-app:latest"
-                commandArgs = "--pull"
-            }
-        }
-        dockerCommand {
             name = "Push Image to GitHub"
             id = "Push_Image_to_GitHub"
             enabled = false
