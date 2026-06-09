@@ -106,37 +106,38 @@ object Deploy : BuildType({
                 #!/bin/bash
                 set -e
                 
-                TARGET_IP="147.45.158.68"
-                CONTEXT_NAME="remote-target"
+                TARGET_HOST="147.45.158.68"
                 
-                echo "=== СТАРТ: Настройка Docker Context ==="
-                # Удаляем старый контекст
-                docker context rm -f ${'$'}CONTEXT_NAME || true
+                # Опции, чтобы ssh не задавал интерактивных вопросов в логах TeamCity
+                SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
                 
-                # Исправление: зашиваем отключение StrictHostKeyChecking прямо в URL подключения контекста
-                docker context create ${'$'}CONTEXT_NAME --docker "host=ssh://root@${'$'}TARGET_IP?ssh-options=-o%20StrictHostKeyChecking=no%20-o%20UserKnownHostsFile=/dev/null"
+                echo "=== СТАРТ: Копируем docker-compose.yml на целевой сервер ==="
+                # Создаем папку проекта на сервере (ключ подхватится из SSH Agent автоматически)
+                ssh ${'$'}SSH_OPTS root@${'$'}TARGET_HOST "mkdir -p ~/eos-test-app"
                 
-                # Переключаем докер-клиент на удаленный сервер
-                docker context use ${'$'}CONTEXT_NAME
+                # Копируем файл docker-compose.yml из репозитория на сервер
+                scp ${'$'}SSH_OPTS docker-compose.yml root@${'$'}TARGET_HOST:~/eos-test-app/docker-compose.yml
                 
-                echo "=== Проверка подключения к новому серверу ==="
-                docker info
                 
-                echo "=== Авторизация в GitHub Packages на удаленном сервере ==="
-                echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
+                echo "=== СТАРТ: Выполнение команд деплоя на сервере ==="
+                # Подключаемся по SSH и запускаем докер прямо на сервере
+                ssh ${'$'}SSH_OPTS root@${'$'}TARGET_HOST "
+                    cd ~/eos-test-app
                 
-                echo "=== Деплой: Стягиваем образы и перезапускаем проект ==="
-                docker compose pull
-                docker compose up -d
+                    # Авторизуем Docker сервера в GitHub Packages
+                    echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
                 
-                echo "=== Очистка старых образов на сервере ==="
-                docker image prune -f
+                    echo '=== Сервер: Скачиваем свежий образ ==='
+                    docker compose pull
                 
-                echo "=== СБРОС: Возвращаем локальный контекст ==="
-                docker context use default
-                docker context rm -f ${'$'}CONTEXT_NAME
+                    echo '=== Сервер: Перезапускаем контейнер ==='
+                    docker compose up -d
                 
-                echo "=== ДЕПЛОЙ НА НОВЫЙ СЕРВЕР УСПЕШНО ЗАВЕРШЕН! ==="
+                    echo '=== Сервер: Очищаем старые образы ==='
+                    docker image prune -f
+                "
+                
+                echo "=== ДЕПЛОЙ ПОЛНОСТЬЮ ЗАВЕРШЕН! ==="
             """.trimIndent()
         }
     }
