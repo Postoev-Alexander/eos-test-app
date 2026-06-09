@@ -99,20 +99,6 @@ object Deploy : BuildType({
 
     steps {
         script {
-            name = "Build and Push Image"
-            id = "Build_and_Push_Image"
-            enabled = false
-            scriptContent = """
-                echo "=== СТАРТ: Сборка Docker-образа ==="
-                sudo docker build -t ghcr.io/postoev-alexander/eos-test-app:0.01 .
-                
-                echo "=== СТАРТ: Отправка образа на GitHub ==="
-                sudo docker push ghcr.io/postoev-alexander/eos-test-app:0.01
-                
-                echo "=== ВСЁ ГОТОВО! Образ успешно загружен ==="
-            """.trimIndent()
-        }
-        script {
             name = "Build and Push Image (1)"
             id = "simpleRunner"
             enabled = false
