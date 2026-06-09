@@ -78,6 +78,7 @@ object Build : BuildType({
         dockerCommand {
             name = "Push Image to GitHub"
             id = "Push_Image_to_GitHub"
+            enabled = false
             commandType = push {
                 namesAndTags = "ghcr.io/postoev-alexander/eos-test-app:latest"
             }
