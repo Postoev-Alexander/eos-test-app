@@ -87,6 +87,7 @@ object Deploy : BuildType({
     name = "Deploy"
 
     params {
+        param("TARGET_USER", "root")
         password("env.GHCR_TOKEN", "credentialsJSON:ba06c367-fae5-4052-9b2a-f5852770d954")
         param("TARGET_HOST", "rate.test.eos.winzardy.com")
     }
