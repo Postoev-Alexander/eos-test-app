@@ -83,6 +83,27 @@ object Build : BuildType({
                 namesAndTags = "ghcr.io/postoev-alexander/eos-test-app:latest"
             }
         }
+        script {
+            name = "Build and Push Image (1)"
+            id = "Build_and_Push_Image_1"
+            scriptContent = """
+                #!/bin/bash
+                set -e
+                
+                echo "=== СТАРТ: Авторизация в GitHub Container Registry ==="
+                # Передаем токен явно внутрь sudo, чтобы исключить проблемы с окружением
+                export CR_PAT="%env.GHCR_TOKEN%"
+                echo "${'$'}CR_PAT" | sudo docker login ghcr.io -u Postoev-Alexander --password-stdin
+                
+                echo "=== СТАРТ: Сборка Docker-образа ==="
+                sudo docker build -t ghcr.io/postoev-alexander/eos-test-app:latest .
+                
+                echo "=== СТАРТ: Отправка образа на GitHub ==="
+                sudo docker push ghcr.io/postoev-alexander/eos-test-app:latest
+                
+                echo "=== ВСЁ ГОТОВО! ==="
+            """.trimIndent()
+        }
     }
 
     triggers {
