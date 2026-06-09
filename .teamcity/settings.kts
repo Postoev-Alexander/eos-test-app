@@ -1,6 +1,5 @@
 import jetbrains.buildServer.configs.kotlin.*
 import jetbrains.buildServer.configs.kotlin.buildFeatures.perfmon
-import jetbrains.buildServer.configs.kotlin.buildSteps.exec
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
 
@@ -65,10 +64,10 @@ object Build : BuildType({
                 echo "=== ВСЁ ГОТОВО! Образ успешно загружен ==="
             """.trimIndent()
         }
-        exec {
+        script {
+            name = "Build and Push Image (1)"
             id = "simpleRunner"
-            path = ".cicd/build.sh"
-            arguments = "--push"
+            scriptContent = "sudo bash .cicd/build.sh --push"
         }
     }
 
