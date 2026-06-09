@@ -121,6 +121,40 @@ object Deploy : BuildType({
             enabled = false
             scriptContent = """sudo CR_PAT="%env.GHCR_TOKEN%" bash .cicd/build.sh --push"""
         }
+        script {
+            name = "deploy"
+            id = "deploy"
+            scriptContent = """
+                #!/bin/bash
+                set -e
+                
+                echo "=== СТАРТ: Копируем docker-compose.yml на целевой сервер ==="
+                # Создаем папку на сервере (если её нет)
+                ssh -o StrictHostKeyChecking=no %TARGET_USER%@%TARGET_HOST% "mkdir -p ~/eos-test-app"
+                
+                # Перебрасываем файл docker-compose.yml из рабочей директории TeamCity прямо на сервер
+                scp -o StrictHostKeyChecking=no docker-compose.yml %TARGET_USER%@%TARGET_HOST%:~/eos-test-app/docker-compose.yml
+                
+                echo "=== СТАРТ: Выполнение команд деплоя на сервере %TARGET_HOST% ==="
+                ssh -o StrictHostKeyChecking=no %TARGET_USER%@%TARGET_HOST% "
+                    cd ~/eos-test-app
+                
+                    # Авторизуем Docker на сервере в реестре GitHub
+                    echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
+                
+                    echo '=== Сервер: Скачиваем свежий образ ==='
+                    docker compose pull
+                
+                    echo '=== Сервер: Перезапускаем контейнер ==='
+                    docker compose up -d
+                
+                    echo '=== Сервер: Очищаем старые образы ==='
+                    docker image prune -f
+                "
+                
+                echo "=== ДЕПЛОЙ ПОЛНОСТЬЮ ЗАВЕРШЕН! ==="
+            """.trimIndent()
+        }
     }
 
     triggers {
