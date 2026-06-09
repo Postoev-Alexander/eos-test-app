@@ -130,18 +130,20 @@ object Deploy : BuildType({
                 #!/bin/bash
                 set -e
                 
-                echo "=== СТАРТ: Копируем docker-compose.yml на целевой сервер ==="
-                # Создаем папку на сервере (если её нет)
-                ssh -o StrictHostKeyChecking=no %TARGET_USER%@%TARGET_HOST% "mkdir -p ~/eos-test-app"
+                # Настройки SSH для автоматизации: отключаем вопросы про Host Key и передаем ключ
+                SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %teamcity.ssh.private.key.path%"
                 
-                # Перебрасываем файл docker-compose.yml из рабочей директории TeamCity прямо на сервер
-                scp -o StrictHostKeyChecking=no docker-compose.yml %TARGET_USER%@%TARGET_HOST%:~/eos-test-app/docker-compose.yml
+                echo "=== СТАРТ: Копируем docker-compose.yml на целевой сервер ==="
+                # Создаем папку на сервере
+                ssh ${'$'}SSH_OPTS %TARGET_USER%@%TARGET_HOST% "mkdir -p ~/eos-test-app"
+                
+                # Перебрасываем файл через scp с нашим ключом
+                scp ${'$'}SSH_OPTS docker-compose.yml %TARGET_USER%@%TARGET_HOST%:~/eos-test-app/docker-compose.yml
                 
                 echo "=== СТАРТ: Выполнение команд деплоя на сервере %TARGET_HOST% ==="
-                ssh -o StrictHostKeyChecking=no %TARGET_USER%@%TARGET_HOST% "
+                ssh ${'$'}SSH_OPTS %TARGET_USER%@%TARGET_HOST% "
                     cd ~/eos-test-app
                 
-                    # Авторизуем Docker на сервере в реестре GitHub
                     echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
                 
                     echo '=== Сервер: Скачиваем свежий образ ==='
