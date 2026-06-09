@@ -145,6 +145,7 @@ object Deploy : BuildType({
 
     triggers {
         vcs {
+            enabled = false
         }
     }
 
