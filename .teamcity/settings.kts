@@ -48,7 +48,7 @@ object Build : BuildType({
         script {
             name = "Docker Login"
             id = "Docker_Login"
-            scriptContent = """echo "%env.GHCR_TOKEN%" | docker login ghcr.io -u Postoev-Alexander --password-stdin"""
+            scriptContent = """echo "%env.GHCR_TOKEN%" | sudo docker login ghcr.io -u Postoev-Alexander --password-stdin"""
         }
         script {
             name = "Build and Push Image"
