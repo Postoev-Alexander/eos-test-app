@@ -89,8 +89,8 @@ object Deploy : BuildType({
 
     params {
         param("TARGET_USER", "root")
-        password("env.GHCR_TOKEN", "credentialsJSON:ba06c367-fae5-4052-9b2a-f5852770d954")
         param("TARGET_HOST", "rate.test.eos.winzardy.com")
+        password("env.GHCR_TOKEN", "credentialsJSON:ba06c367-fae5-4052-9b2a-f5852770d954")
     }
 
     vcs {
@@ -131,17 +131,28 @@ object Deploy : BuildType({
                 #!/bin/bash
                 set -e
                 
-                # Оставляем только игнорирование проверки хоста, ключ подхватит SSH Agent
+                # 1. Устанавливаем утилиту sshpass прямо на лету внутри контейнера-агента
+                echo "=== Установка sshpass ==="
+                sudo apt-get update && sudo apt-get install -y sshpass
+                
+                # 2. Объявляем пароль и общие опции для подключения
+                export SSHPASS="uw#-DVX7T657j-"
                 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
                 
                 echo "=== СТАРТ: Копируем docker-compose.yml на целевой сервер ==="
-                ssh ${'$'}SSH_OPTS %TARGET_USER%@%TARGET_HOST% "mkdir -p ~/eos-test-app"
-                scp ${'$'}SSH_OPTS docker-compose.yml %TARGET_USER%@%TARGET_HOST%:~/eos-test-app/docker-compose.yml
+                # Создаем папку на сервере через sshpass
+                sshpass -e ssh ${'$'}SSH_OPTS %TARGET_USER%@%TARGET_HOST% "mkdir -p ~/eos-test-app"
+                
+                # Перебрасываем файл через scp с паролем
+                sshpass -e scp ${'$'}SSH_OPTS docker-compose.yml %TARGET_USER%@%TARGET_HOST%:~/eos-test-app/docker-compose.yml
+                
                 
                 echo "=== СТАРТ: Выполнение команд деплоя на сервере %TARGET_HOST% ==="
-                ssh ${'$'}SSH_OPTS %TARGET_USER%@%TARGET_HOST% "
+                # Подключаемся по SSH и выполняем весь блок команд на сервере
+                sshpass -e ssh ${'$'}SSH_OPTS %TARGET_USER%@%TARGET_HOST% "
                     cd ~/eos-test-app
                 
+                    # Авторизуем Docker на сервере в реестре GitHub
                     echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
                 
                     echo '=== Сервер: Скачиваем свежий образ ==='
