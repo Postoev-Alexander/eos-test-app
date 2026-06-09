@@ -118,6 +118,7 @@ object Deploy : BuildType({
         script {
             name = "Build and Push Image (1)"
             id = "simpleRunner"
+            enabled = false
             scriptContent = """sudo CR_PAT="%env.GHCR_TOKEN%" bash .cicd/build.sh --push"""
         }
     }
