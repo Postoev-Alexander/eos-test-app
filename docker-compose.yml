@@ -1,18 +1,17 @@
-version: '3.8'
-
 services:
   web:
     image: ghcr.io/postoev-alexander/eos-test-app:latest
     container_name: eos-test-app-container
     restart: unless-stopped
     networks:
-      - eos-edge
+      - eos-edge   # Имя здесь...
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.eostest.rule=Host(`rate.test.eos.winzardy.com`)"
-      - "traefik.http.routers.eostest.entrypoints=web" # или websecure, если настроен SSL
+      - "traefik.http.routers.eostest.entrypoints=websecure" # переключаем на websecure, так как у нас LetsEncrypt в Трафике настроен
+      - "traefik.http.routers.eostest.tls.certresolver=letsencrypt"
       - "traefik.http.services.eostest.loadbalancer.server.port=80"
 
 networks:
-  teamcity_net:
+  eos-edge:
     external: true
