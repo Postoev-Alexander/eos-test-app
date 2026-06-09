@@ -29,11 +29,62 @@ version = "2024.12"
 
 project {
 
+    buildType(Deploy)
     buildType(Build)
 }
 
 object Build : BuildType({
     name = "Build"
+
+    params {
+        password("env.GHCR_TOKEN", "credentialsJSON:ba06c367-fae5-4052-9b2a-f5852770d954")
+    }
+
+    vcs {
+        root(DslContext.settingsRoot)
+    }
+
+    steps {
+        script {
+            name = "Docker Login"
+            id = "Docker_Login"
+            enabled = false
+            scriptContent = """echo "%env.GHCR_TOKEN%" | sudo docker login ghcr.io -u Postoev-Alexander --password-stdin"""
+        }
+        script {
+            name = "Build and Push Image"
+            id = "Build_and_Push_Image"
+            enabled = false
+            scriptContent = """
+                echo "=== СТАРТ: Сборка Docker-образа ==="
+                sudo docker build -t ghcr.io/postoev-alexander/eos-test-app:0.01 .
+                
+                echo "=== СТАРТ: Отправка образа на GitHub ==="
+                sudo docker push ghcr.io/postoev-alexander/eos-test-app:0.01
+                
+                echo "=== ВСЁ ГОТОВО! Образ успешно загружен ==="
+            """.trimIndent()
+        }
+        script {
+            name = "Build and Push Image (1)"
+            id = "simpleRunner"
+            scriptContent = """sudo CR_PAT="%env.GHCR_TOKEN%" bash .cicd/build.sh --push"""
+        }
+    }
+
+    triggers {
+        vcs {
+        }
+    }
+
+    features {
+        perfmon {
+        }
+    }
+})
+
+object Deploy : BuildType({
+    name = "Deploy"
 
     params {
         password("env.GHCR_TOKEN", "credentialsJSON:ba06c367-fae5-4052-9b2a-f5852770d954")
