@@ -74,6 +74,13 @@ object Build : BuildType({
                 commandArgs = "--pull"
             }
         }
+        dockerCommand {
+            name = "Push Image to GitHub"
+            id = "Push_Image_to_GitHub"
+            commandType = push {
+                namesAndTags = "ghcr.io/postoev-alexander/eos-test-app:latest"
+            }
+        }
     }
 
     triggers {
