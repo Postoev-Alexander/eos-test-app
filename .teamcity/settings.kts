@@ -1,5 +1,6 @@
 import jetbrains.buildServer.configs.kotlin.*
 import jetbrains.buildServer.configs.kotlin.buildFeatures.perfmon
+import jetbrains.buildServer.configs.kotlin.buildSteps.dockerCommand
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
 
@@ -61,6 +62,17 @@ object Build : BuildType({
                 # 2. Отправляем (пушим) этот образ в твой GitHub Packages
                 docker push ghcr.io/postoev-alexander/eos-test-app:0.01
             """.trimIndent()
+        }
+        dockerCommand {
+            name = "Build Image"
+            id = "Build_Image"
+            commandType = build {
+                source = file {
+                    path = "Dockerfile"
+                }
+                namesAndTags = "ghcr.io/postoev-alexander/eos-test-app:latest"
+                commandArgs = "--pull"
+            }
         }
     }
 
