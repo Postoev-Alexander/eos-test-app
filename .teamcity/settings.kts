@@ -88,6 +88,7 @@ object Build : BuildType({
         script {
             name = "Build and Push Image (1)"
             id = "Build_and_Push_Image_1"
+            enabled = false
             scriptContent = """
                 #!/bin/bash
                 set -e
