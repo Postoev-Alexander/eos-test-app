@@ -1,5 +1,6 @@
 import jetbrains.buildServer.configs.kotlin.*
 import jetbrains.buildServer.configs.kotlin.buildFeatures.perfmon
+import jetbrains.buildServer.configs.kotlin.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
 
 /*
@@ -36,6 +37,14 @@ object Build : BuildType({
 
     vcs {
         root(DslContext.settingsRoot)
+    }
+
+    steps {
+        script {
+            name = "Docker Login"
+            id = "Docker_Login"
+            scriptContent = """echo "%env.GHCR_TOKEN%" | docker login ghcr.io -u Postoev-Alexander --password-stdin"""
+        }
     }
 
     triggers {
