@@ -106,27 +106,40 @@ object Deploy : BuildType({
                 #!/bin/bash
                 set -e
                 
-                echo "=== СТАРТ: Деплой через удаленный контекст Docker ==="
+                TARGET_IP="147.45.158.68"
+                CONTEXT_NAME="remote-target"
                 
-                export SSHPASS="uw#-DVX7T657j-"
+                # Опции SSH, чтобы агент не спотыкался о проверку незнакомого хоста
+                export DOCKER_SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
                 
-                # Авторизуем удаленный сервер в реестре пакетов GitHub
-                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" login ghcr.io -u Postoev-Alexander --password-stdin <<EOF
-                %env.GHCR_TOKEN%
-                EOF
+                echo "=== СТАРТ: Настройка Docker Context ==="
+                # Удаляем контекст, если он остался от прошлых запусков, и создаем чистый
+                docker context rm -f ${'$'}CONTEXT_NAME || true
+                docker context create ${'$'}CONTEXT_NAME --docker "host=ssh://root@${'$'}TARGET_IP"
                 
-                echo "=== Локальный докер дает команду удаленному серверу стянуть образ ==="
-                # Исправлено: пишем "docker compose" вместо "docker-compose"
-                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" compose pull
+                # Переключаем докер-клиент на удаленный сервер
+                docker context use ${'$'}CONTEXT_NAME
                 
-                echo "=== Локальный докер перезапускает контейнер на сервере ==="
-                # Исправлено: пишем "docker compose" вместо "docker-compose"
-                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" compose up -d
+                echo "=== Проверка подключения к новому серверу ==="
+                docker info
                 
-                echo "=== Очищаем старые неиспользуемые образы на сервере ==="
-                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" image prune -f
+                echo "=== Авторизация в GitHub Packages на удаленном сервере ==="
+                echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
                 
-                echo "=== ДЕПЛОЙ УСПЕШНО ЗАВЕРШЕН! ==="
+                echo "=== Деплой: Стягиваем образы и перезапускаем проект ==="
+                # Локальный docker compose подхватит docker-compose.yml из папки билда 
+                # и развернет его на удаленном сервере в контексте
+                docker compose pull
+                docker compose up -d
+                
+                echo "=== Очистка старых образов на сервере ==="
+                docker image prune -f
+                
+                echo "=== СБРОС: Возвращаем локальный контекст ==="
+                docker context use default
+                docker context rm -f ${'$'}CONTEXT_NAME
+                
+                echo "=== ДЕПЛОЙ НА НОВЫЙ СЕРВЕР УСПЕШНО ЗАВЕРШЕН! ==="
             """.trimIndent()
         }
     }
