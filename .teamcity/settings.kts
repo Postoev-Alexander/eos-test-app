@@ -45,6 +45,17 @@ object Build : BuildType({
             id = "Docker_Login"
             scriptContent = """echo "%env.GHCR_TOKEN%" | docker login ghcr.io -u Postoev-Alexander --password-stdin"""
         }
+        script {
+            name = "Build and Push Image"
+            id = "Build_and_Push_Image"
+            scriptContent = """
+                # 1. Собираем образ из Dockerfile и даем ему имя твоего реестра на GitHub с тегом latest
+                docker build -t ghcr.io/postoev-alexander/eos-test-app:latest .
+                
+                # 2. Отправляем (пушим) этот образ в твой GitHub Packages
+                docker push ghcr.io/postoev-alexander/eos-test-app:latest
+            """.trimIndent()
+        }
     }
 
     triggers {
