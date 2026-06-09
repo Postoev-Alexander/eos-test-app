@@ -60,7 +60,7 @@ object Build : BuildType({
                 echo "=== СТАРТ: Отправка образа на GitHub ==="
                 sudo docker push ghcr.io/postoev-alexander/eos-test-app:0.01
                 
-                echo "=== ВСЁ ГОТОВО! Образ успешно улетел ==="
+                echo "=== ВСЁ ГОТОВО! Образ успешно загружен ==="
             """.trimIndent()
         }
         dockerCommand {
