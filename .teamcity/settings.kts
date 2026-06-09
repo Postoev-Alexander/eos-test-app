@@ -106,37 +106,24 @@ object Deploy : BuildType({
                 #!/bin/bash
                 set -e
                 
-                echo "=== Установка sshpass ==="
-                sudo apt-get update && sudo apt-get install -y sshpass
+                echo "=== СТАРТ: Деплой через удаленный контекст Docker ==="
                 
+                # Передаем пароль в переменную для Docker SSH соединения
                 export SSHPASS="uw#-DVX7T657j-"
-                SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
                 
-                echo "=== СТАРТ: Выполнение команд деплоя на сервере 72.56.41.35 ==="
-                # Мы делаем всего ОДИН быстрый коннект по SSH, который гарантированно проходит
-                sudo -E sshpass -e ssh ${'$'}SSH_OPTS root@72.56.41.35 "
-                    # Создаем папку проекта на сервере
-                    mkdir -p ~/eos-test-app
-                    cd ~/eos-test-app
+                # Говорим локальной утилите docker compose работать напрямую с удаленным сервером
+                # Используем sshpass, чтобы докер сам авторизовался на сервере
+                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" login ghcr.io -u Postoev-Alexander --password-stdin <<EOF
+                %env.GHCR_TOKEN%
+                EOF
                 
-                    # Сервер САМ скачивает чистый docker-compose.yml напрямую из твоего GitHub
-                    echo '=== Сервер: Скачиваем docker-compose.yml из Git ==='
-                    curl -sSL https://raw.githubusercontent.com/Postoev-Alexander/eos-test-app/main/docker-compose.yml -o docker-compose.yml
+                echo "=== Локальный докер дает команду удаленному серверу стянуть образ ==="
+                sudo -E sshpass -e docker-compose -H "ssh://root@72.56.41.35" pull
                 
-                    # Логиним докер сервера в реестр пакетов
-                    echo '%env.GHCR_TOKEN%' | docker login ghcr.io -u Postoev-Alexander --password-stdin
+                echo "=== Локальный докер перезапускает контейнер на сервере ==="
+                sudo -E sshpass -e docker-compose -H "ssh://root@72.56.41.35" up -d
                 
-                    echo '=== Сервер: Скачиваем свежий образ ==='
-                    docker compose pull
-                
-                    echo '=== Сервер: Перезапускаем контейнер ==='
-                    docker compose up -d
-                
-                    echo '=== Сервер: Очищаем старые образы ==='
-                    docker image prune -f
-                "
-                
-                echo "=== ДЕПЛОЙ ПОЛНОСТЬЮ ЗАВЕРШЕН! ==="
+                echo "=== Деплой завершен! ==="
             """.trimIndent()
         }
     }
