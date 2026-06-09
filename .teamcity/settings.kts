@@ -66,7 +66,6 @@ object Build : BuildType({
         dockerCommand {
             name = "Build Image"
             id = "Build_Image"
-            enabled = false
             commandType = build {
                 source = file {
                     path = "Dockerfile"
