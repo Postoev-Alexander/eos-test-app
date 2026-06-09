@@ -108,22 +108,25 @@ object Deploy : BuildType({
                 
                 echo "=== СТАРТ: Деплой через удаленный контекст Docker ==="
                 
-                # Передаем пароль в переменную для Docker SSH соединения
                 export SSHPASS="uw#-DVX7T657j-"
                 
-                # Говорим локальной утилите docker compose работать напрямую с удаленным сервером
-                # Используем sshpass, чтобы докер сам авторизовался на сервере
+                # Авторизуем удаленный сервер в реестре пакетов GitHub
                 sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" login ghcr.io -u Postoev-Alexander --password-stdin <<EOF
                 %env.GHCR_TOKEN%
                 EOF
                 
                 echo "=== Локальный докер дает команду удаленному серверу стянуть образ ==="
-                sudo -E sshpass -e docker-compose -H "ssh://root@72.56.41.35" pull
+                # Исправлено: пишем "docker compose" вместо "docker-compose"
+                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" compose pull
                 
                 echo "=== Локальный докер перезапускает контейнер на сервере ==="
-                sudo -E sshpass -e docker-compose -H "ssh://root@72.56.41.35" up -d
+                # Исправлено: пишем "docker compose" вместо "docker-compose"
+                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" compose up -d
                 
-                echo "=== Деплой завершен! ==="
+                echo "=== Очищаем старые неиспользуемые образы на сервере ==="
+                sudo -E sshpass -e docker -H "ssh://root@72.56.41.35" image prune -f
+                
+                echo "=== ДЕПЛОЙ УСПЕШНО ЗАВЕРШЕН! ==="
             """.trimIndent()
         }
     }
