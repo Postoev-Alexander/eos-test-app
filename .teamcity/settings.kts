@@ -53,6 +53,7 @@ object Build : BuildType({
         script {
             name = "Build and Push Image"
             id = "Build_and_Push_Image"
+            enabled = false
             scriptContent = """
                 # 1. Собираем образ из Dockerfile и даем ему имя твоего реестра на GitHub с тегом latest
                 docker build -t ghcr.io/postoev-alexander/eos-test-app:0.01 .
